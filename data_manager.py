@@ -21,3 +21,13 @@ class DataManager:
         data = sheety_response.json()
         self.destination_data = data["prices"]
         return self.destination_data
+
+    def update_lowest_price(self, row_id, new_price):
+        body = {
+            "price": {
+                "lowestPrice": new_price
+            }
+        }
+        response = requests.put(url=f"{SHEETY_PRICES_ENDPOINT}/{row_id}", json=body, auth=self._authorization)
+
+        response.raise_for_status()
