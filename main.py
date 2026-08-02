@@ -3,7 +3,7 @@ import requests_cache
 from data_manager import DataManager
 from datetime import datetime, timedelta
 from flight_search import FlightSearch
-from flight_data import FlightData
+from flight_data import find_cheapest_flight
 
 print("Program started")
 
@@ -29,35 +29,36 @@ six_month_from_today = today + timedelta(days=180)
 # ==================== Do a Flight Search ====================
 flight_search = FlightSearch()
 
+for row in sheet_data:
 
-flights = flight_search.check_flights(
-    origin_city_code="LHR",
-    destination_city_code=sheet_data[0]["iataCode"],
-    from_time=tomorrow,
-    to_time=six_month_from_today,
-)
+    flights = flight_search.check_flights(
+        origin_city_code="LHR",
+        destination_city_code=row["iataCode"],
+        from_time=tomorrow,
+        to_time=six_month_from_today,
+    )
 
-first_best_flight = flights["best_flights"][0]
+    # Skip this city if no flights were returned
+    if flights is None:
+        continue
 
-cheapest_flight = None
-for flight in flights["best_flights"]:
-    if cheapest_flight is None:
-        cheapest_flight = flight
-    elif flight["price"] < cheapest_flight["price"]:
-        cheapest_flight = flight
+    print(f"Searching {row['city']}")
 
-flight_data = FlightData(
-    price=cheapest_flight["price"],
-    origin_airport=cheapest_flight["flights"][0]["departure_airport"]["id"],
-    destination_airport=cheapest_flight["flights"][0]["arrival_airport"]["id"],
-    out_date=cheapest_flight["flights"][0]["departure_airport"]["time"],
-    return_date=cheapest_flight["flights"][-1]["arrival_airport"]["time"],
-)
+    cheapest_flight = find_cheapest_flight(
+        flights,
+        six_month_from_today.strftime("%Y-%m-%d")
+    )
 
-print(f"Flight price: {flight_data.price}")
-print(f"Spreadsheet price: {sheet_data[0]['lowestPrice']}")
+    print(f"{row['city']}: £{cheapest_flight.price}")
+    print(f"Spreadsheet price: £{row['lowestPrice']}")
 
-if flight_data.price < sheet_data[0]["lowestPrice"]:
-    print(f"Lower price found for {sheet_data[0]['city']}!")
+    if (
+        cheapest_flight.price != "N/A"
+        and cheapest_flight.price < row["lowestPrice"]
+    ):
+        print(f"Lower price found for {row['city']}!")
 
-    data_manager.update_lowest_price(row_id=sheet_data[0]["id"], new_price=flight_data.price)
+        data_manager.update_lowest_price(
+            row_id=row["id"],
+            new_price=cheapest_flight.price,
+        )

@@ -7,3 +7,63 @@ class FlightData:
         self.destination_airport = destination_airport
         self.out_date = out_date
         self.return_date = return_date
+
+
+def find_cheapest_flight(data, return_date):
+    """Find the cheapest flight from the API response."""
+
+    # Handle empty or missing flight data
+    if data is None or (not data.get("best_flights") and not data.get("other_flights")):
+        print("No flight data.")
+        return FlightData(
+            price="N/A",
+            origin_airport="N/A",
+            destination_airport="N/A",
+            out_date="N/A",
+            return_date="N/A",
+        )
+
+    # Combine all available flights
+    all_flights = data.get("best_flights", []) + data.get("other_flights", [])
+
+    # Assume the first flight is the cheapest
+    first_flight = all_flights[0]
+
+    lowest_price = first_flight["price"]
+    origin = first_flight["flights"][0]["departure_airport"]["id"]
+    destination = first_flight["flights"][-1]["arrival_airport"]["id"]
+    out_date = first_flight["flights"][0]["departure_airport"]["time"].split(" ")[0]
+
+    cheapest_flight = FlightData(
+        lowest_price,
+        origin,
+        destination,
+        out_date,
+        return_date,
+    )
+
+    # Compare every flight
+    for flight in all_flights:
+        try:
+            price = flight["price"]
+        except KeyError:
+            print("--- No price available for flight. ---")
+            continue
+
+        if price < lowest_price:
+            lowest_price = price
+            origin = flight["flights"][0]["departure_airport"]["id"]
+            destination = flight["flights"][-1]["arrival_airport"]["id"]
+            out_date = flight["flights"][0]["departure_airport"]["time"].split(" ")[0]
+
+            cheapest_flight = FlightData(
+                lowest_price,
+                origin,
+                destination,
+                out_date,
+                return_date,
+            )
+
+            print(f"Lowest price to {destination} is GBP {lowest_price}")
+
+    return cheapest_flight
