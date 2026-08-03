@@ -7,6 +7,8 @@ from flight_data import find_cheapest_flight
 
 print("Program started")
 
+ORIGIN_CITY_IATA = "LHR"
+
 requests_cache.install_cache(
     "flight_cache",
     urls_expire_after={
@@ -32,7 +34,7 @@ flight_search = FlightSearch()
 for row in sheet_data:
 
     flights = flight_search.check_flights(
-        origin_city_code="LHR",
+        origin_city_code=ORIGIN_CITY_IATA,
         destination_city_code=row["iataCode"],
         from_time=tomorrow,
         to_time=six_month_from_today,
@@ -59,6 +61,6 @@ for row in sheet_data:
         print(f"Lower price found for {row['city']}!")
 
         data_manager.update_lowest_price(
-            row_id=row["id"],
-            new_price=cheapest_flight.price,
+            destination["id"],
+            cheapest_flight.price
         )
